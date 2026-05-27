@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAppStore } from '@/lib/store'
 import {
@@ -91,6 +91,31 @@ export function ProductView() {
   })
 
   const product = productData?.data?.product
+
+  const { data: paymentSettingsData } = useQuery({
+    queryKey: ['payment-settings'],
+    queryFn: async () => {
+      const res = await fetch('/api/admin/payments')
+      if (!res.ok) return {}
+      const json = await res.json()
+      return json.data as Record<string, string>
+    },
+  })
+
+  const mergedPaymentMethods = useMemo(() => {
+    const methods = JSON.parse(JSON.stringify(PAYMENT_METHODS))
+    if (paymentSettingsData) {
+      if (paymentSettingsData['bkash_number']) methods.bdt = methods.bdt.map((m: any) => m.id === 'bkash' ? { ...m, number: paymentSettingsData['bkash_number'] } : m)
+      if (paymentSettingsData['rocket_number']) methods.bdt = methods.bdt.map((m: any) => m.id === 'rocket' ? { ...m, number: paymentSettingsData['rocket_number'] } : m)
+      if (paymentSettingsData['nagad_number']) methods.bdt = methods.bdt.map((m: any) => m.id === 'nagad' ? { ...m, number: paymentSettingsData['nagad_number'] } : m)
+      if (paymentSettingsData['usdt_address']) methods.crypto = methods.crypto.map((m: any) => m.id === 'usdt' ? { ...m, address: paymentSettingsData['usdt_address'] } : m)
+      if (paymentSettingsData['btc_address']) methods.crypto = methods.crypto.map((m: any) => m.id === 'btc' ? { ...m, address: paymentSettingsData['btc_address'] } : m)
+      if (paymentSettingsData['eth_address']) methods.crypto = methods.crypto.map((m: any) => m.id === 'eth' ? { ...m, address: paymentSettingsData['eth_address'] } : m)
+      if (paymentSettingsData['bnb_address']) methods.crypto = methods.crypto.map((m: any) => m.id === 'bnb' ? { ...m, address: paymentSettingsData['bnb_address'] } : m)
+      if (paymentSettingsData['ltc_address']) methods.crypto = methods.crypto.map((m: any) => m.id === 'ltc' ? { ...m, address: paymentSettingsData['ltc_address'] } : m)
+    }
+    return methods
+  }, [paymentSettingsData])
 
   // Fetch reviews
   const {
@@ -564,7 +589,7 @@ export function ProductView() {
 
                   {/* BDT Payment Options */}
                   <TabsContent value="bdt" className="mt-3 space-y-2">
-                    {PAYMENT_METHODS.bdt.map((method) => (
+                    {(mergedPaymentMethods?.bdt || PAYMENT_METHODS.bdt).map((method) => (
                       <div key={method.id}>
                         <button
                           onClick={() => setSelectedPaymentMethod(method.id)}
@@ -613,7 +638,7 @@ export function ProductView() {
 
                   {/* Crypto Payment Options */}
                   <TabsContent value="crypto" className="mt-3 space-y-2">
-                    {PAYMENT_METHODS.crypto.map((method) => (
+                    {(mergedPaymentMethods?.crypto || PAYMENT_METHODS.crypto).map((method) => (
                       <div key={method.id}>
                         <button
                           onClick={() => setSelectedPaymentMethod(method.id)}
