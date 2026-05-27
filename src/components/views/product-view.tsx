@@ -43,6 +43,25 @@ import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+
+interface ReviewUser {
+  id: string
+  username: string
+  email: string
+  avatar: string | null
+}
+
+interface ProductReview {
+  id: string
+  userId: string
+  productId: string
+  rating: number
+  review: string
+  verifiedPurchase: boolean
+  createdAt: string
+  updatedAt: string
+  user: ReviewUser
+}
 import {
   Dialog,
   DialogContent,
@@ -66,6 +85,8 @@ export function ProductView() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('bkash')
   const [transactionId, setTransactionId] = useState('')
   const [proofFile, setProofFile] = useState<File | null>(null)
+  const [robloxUsername, setRobloxUsername] = useState('')
+  const [friendRequestSent, setFriendRequestSent] = useState(false)
 
   // Image gallery state
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
@@ -102,6 +123,10 @@ export function ProductView() {
     },
   })
 
+  const [ownerNoticeOpen, setOwnerNoticeOpen] = useState(false)
+  const ownerBusyNoticeEnabled = (paymentSettingsData?.['show_owner_busy_notice'] === 'true')
+  const ownerBusyNoticeText = paymentSettingsData?.['owner_busy_notice_text'] || `If the owner is at school/college or otherwise busy delivery may be delayed. Please don't leave negative reviews or accuse of scamming — if the owner is busy they may not be able to deliver immediately.`
+
   const mergedPaymentMethods = useMemo(() => {
     const methods = JSON.parse(JSON.stringify(PAYMENT_METHODS))
     if (paymentSettingsData) {
@@ -116,6 +141,7 @@ export function ProductView() {
     }
     return methods
   }, [paymentSettingsData])
+  const sellerRobloxUsername = paymentSettingsData?.roblox_seller_username || 'GAMER_showrov99'
 
   // Fetch reviews
   const {
@@ -131,7 +157,7 @@ export function ProductView() {
     enabled: !!selectedProductId,
   })
 
-  const reviews = reviewsData?.data?.reviews ?? []
+  const reviews: ProductReview[] = reviewsData?.data?.reviews ?? []
 
   // Fetch related products
   const {
@@ -165,6 +191,8 @@ export function ProductView() {
           productId: selectedProductId,
           paymentMethod: selectedPaymentMethod,
           transactionId: transactionId || undefined,
+          robloxUsername,
+          friendRequestSent,
         }),
       })
       const data = await res.json()
@@ -176,7 +204,11 @@ export function ProductView() {
         description: 'You will be notified once your payment is confirmed.',
       })
       queryClient.invalidateQueries({ queryKey: ['orders'] })
-      navigate('orders')
+      if (ownerBusyNoticeEnabled) {
+        setOwnerNoticeOpen(true)
+      } else {
+        navigate('orders')
+      }
     },
     onError: (error: Error) => {
       toast.error('Failed to place order', {
@@ -226,6 +258,18 @@ export function ProductView() {
     if (!transactionId.trim()) {
       toast.error('Transaction ID required', {
         description: 'Please enter your transaction ID to proceed.',
+      })
+      return
+    }
+    if (!robloxUsername.trim()) {
+      toast.error('Roblox username required', {
+        description: 'Enter the Roblox username where the request was sent.',
+      })
+      return
+    }
+    if (!friendRequestSent) {
+      toast.error('Send a friend request first', {
+        description: `Send a Roblox friend request to ${sellerRobloxUsername} and then check the box.`,
       })
       return
     }
@@ -403,6 +447,11 @@ export function ProductView() {
                       Featured
                     </Badge>
                   )}
+                  {product.originalPrice && product.originalPrice > product.priceBdt && (
+                    <Badge className="bg-red-500 text-white text-[11px] font-bold">
+                      -{Math.round(((product.originalPrice - product.priceBdt) / product.originalPrice) * 100)}%
+                    </Badge>
+                  )}
                   {product.rarity && (
                     <Badge
                       variant="outline"
@@ -496,9 +545,14 @@ export function ProductView() {
 
               {/* Price */}
               <div className="flex items-baseline gap-3">
-                <span className="text-3xl font-bold text-gold">
-                  {formatPrice(product.priceBdt)}
-                </span>
+                <div className="flex items-baseline gap-3">
+                  <span className="text-3xl font-bold text-gold">
+                    {formatPrice(product.priceBdt)}
+                  </span>
+                  {product.originalPrice && product.originalPrice > product.priceBdt && (
+                    <span className="text-sm text-muted-foreground line-through">{formatPrice(product.originalPrice)}</span>
+                  )}
+                </div>
                 {product.priceCrypto && (
                   <span className="text-lg text-muted-foreground">
                     {formatCryptoPrice(product.priceCrypto)} USDT
@@ -705,6 +759,38 @@ export function ProductView() {
                   </p>
                 </div>
 
+                <div className="space-y-2">
+                  <label className="text-base font-semibold">
+                    Roblox Username <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    placeholder="Enter your Roblox username"
+                    value={robloxUsername}
+                    onChange={(e) => setRobloxUsername(e.target.value)}
+                    className="bg-background border-border/50"
+                  />
+                  <p className="text-sm text-muted-foreground font-medium">
+                    Enter the Roblox username where the friend request was sent.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-base font-semibold">Friend Request Confirmation</label>
+                  <div className="flex items-start gap-3">
+                    <input
+                      id="friendRequest"
+                      type="checkbox"
+                      checked={friendRequestSent}
+                      onChange={(e) => setFriendRequestSent(e.target.checked)}
+                      className="mt-1 h-4 w-4 rounded border-border/50 text-gold focus:ring-gold"
+                    />
+                    <div className="text-sm text-muted-foreground font-medium">
+                      Send a friend request to <span className="font-semibold text-gold">{sellerRobloxUsername}</span> on Roblox before placing the order.
+                      Then check this box so we can accept it and deliver the product.
+                    </div>
+                  </div>
+                </div>
+
                 {/* Payment Proof Upload */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">
@@ -766,6 +852,21 @@ export function ProductView() {
             </Card>
           </motion.div>
         </div>
+
+        {/* Owner busy notice dialog */}
+        <Dialog open={ownerNoticeOpen} onOpenChange={(open) => { setOwnerNoticeOpen(open); if (!open) navigate('orders') }}>
+          <DialogContent className="max-w-md bg-card border-border/50">
+            <DialogHeader>
+              <DialogTitle className="text-gold-gradient">Delivery Notice</DialogTitle>
+            </DialogHeader>
+            <div className="p-4">
+              <p className="text-sm text-muted-foreground mb-4">{ownerBusyNoticeText}</p>
+              <div className="flex justify-end">
+                <Button className="bg-gold hover:bg-gold/90 text-gold-foreground" onClick={() => setOwnerNoticeOpen(false)}>Okay, got it</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Product Details Section */}
         <motion.section
@@ -951,9 +1052,7 @@ export function ProductView() {
                   <Separator orientation="vertical" className="h-16 bg-border/30" />
                   <div className="flex-1 space-y-1">
                     {[5, 4, 3, 2, 1].map((star) => {
-                      const count = reviews.filter(
-                        (r: Record<string, unknown>) => (r.rating as number) === star
-                      ).length
+                      const count = reviews.filter((r: ProductReview) => r.rating === star).length
                       const pct = reviewCount > 0 ? (count / reviewCount) * 100 : 0
                       return (
                         <div key={star} className="flex items-center gap-2">
@@ -1000,7 +1099,7 @@ export function ProductView() {
                 <ScrollArea className="max-h-96">
                   <div className="space-y-4 pr-4">
                     <AnimatePresence>
-                      {reviews.map((review: Record<string, unknown>, index: number) => (
+                      {reviews.map((review: ProductReview, index: number) => (
                         <motion.div
                           key={review.id as string}
                           initial={{ opacity: 0, y: 10 }}
@@ -1012,7 +1111,7 @@ export function ProductView() {
                             {/* Avatar */}
                             <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center shrink-0">
                               <span className="text-sm font-semibold text-gold">
-                                {((review.user as Record<string, unknown>)?.username as string || 'U')
+                                {(review.user.username || 'U')
                                   .charAt(0)
                                   .toUpperCase()}
                               </span>
@@ -1021,7 +1120,7 @@ export function ProductView() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="text-sm font-semibold">
-                                  {(review.user as Record<string, unknown>)?.username as string || 'Anonymous'}
+                                  {review.user.username || 'Anonymous'}
                                 </span>
                                 {review.verifiedPurchase && (
                                   <Badge
