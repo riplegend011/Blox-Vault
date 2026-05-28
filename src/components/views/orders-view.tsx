@@ -47,6 +47,10 @@ interface Order {
   deliveryStatus: string
   total: number
   adminNote: string | null
+  robloxUsername?: string | null
+  discordUsername?: string | null
+  accountDeliveryMethod?: string | null
+  supportTicketId?: string | null
   createdAt: string
   updatedAt: string
   product: {
@@ -250,43 +254,48 @@ function OrderRow({ order }: { order: Order }) {
                       <p className="text-sm font-mono">{order.transactionId}</p>
                     </div>
                   )}
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Total</p>
-                    <p className="text-sm font-bold text-gold">{formatPrice(order.total)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Delivery Status</p>
-                    <Badge variant="outline" className="text-xs mt-0.5">
-                      {DELIVERY_STATUS_LABELS[order.deliveryStatus] || order.deliveryStatus}
-                    </Badge>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Order Date</p>
-                    <p className="text-sm">{formatDate(order.createdAt)}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Payment Proof */}
-              <div>
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                  Payment Proof
-                </h4>
-                {order.proofImage ? (
-                  <div className="relative">
-                    <img
-                      src={order.proofImage}
-                      alt="Payment proof"
-                      className="w-full max-w-xs rounded-lg border border-border/50 object-cover max-h-48"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <p className="text-sm text-muted-foreground">No proof uploaded yet.</p>
-                    <Dialog open={proofDialogOpen} onOpenChange={setProofDialogOpen}>
-                      <DialogTrigger asChild>
+                      {order.accountDeliveryMethod && (
+                        <div>
+                          <p className="text-xs text-muted-foreground">Delivery Type</p>
+                          <p className="text-sm font-medium capitalize">
+                            {order.accountDeliveryMethod === 'support_ticket' ? 'Support Ticket' : 'Discord'}
+                          </p>
+                        </div>
+                      )}
+                      {order.supportTicketId && (
+                        <div>
+                          <p className="text-xs text-muted-foreground">Support Ticket ID</p>
+                          <p className="text-sm font-mono">{order.supportTicketId}</p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Total</p>
+                        <p className="text-sm font-bold text-gold">{formatPrice(order.total)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Delivery Status</p>
+                        <Badge variant="outline" className="text-xs mt-0.5">
+                          {DELIVERY_STATUS_LABELS[order.deliveryStatus] || order.deliveryStatus}
+                        </Badge>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Order Date</p>
+                        <p className="text-sm">{formatDate(order.createdAt)}</p>
+                      </div>
+                      {order.discordUsername && (
+                        <div>
+                          <p className="text-xs text-muted-foreground">Discord Username</p>
+                          <p className="text-sm font-medium">{order.discordUsername}</p>
+                        </div>
+                      )}
+                      {order.robloxUsername && (
+                        <div>
+                          <p className="text-xs text-muted-foreground">Roblox Username</p>
+                          <p className="text-sm font-medium">{order.robloxUsername}</p>
+                        </div>
+                      )}
                         <Button size="sm" variant="outline" className="text-gold border-gold/30 hover:bg-gold/10">
                           <Upload className="w-3.5 h-3.5 mr-1.5" />
                           Upload Proof

@@ -144,6 +144,7 @@ export function ProductView() {
     return methods
   }, [paymentSettingsData])
   const sellerRobloxUsername = paymentSettingsData?.roblox_seller_username || 'GAMER_showrov99'
+  const sellerDiscordUsername = paymentSettingsData?.discord_seller_username || 'showrov_gamer'
 
   // Fetch reviews
   const {
@@ -266,32 +267,42 @@ export function ProductView() {
       return
     }
 
-    if (product.category === 'account' && accountDeliveryMethod === 'support_ticket') {
-      createOrderMutation.mutate()
+    if (!transactionId.trim()) {
+      toast.error('Transaction ID required', {
+        description: 'Please enter your transaction ID to proceed.',
+      })
       return
     }
 
-    if (product.category === 'account' && accountDeliveryMethod === 'discord') {
-      if (!discordUsername.trim()) {
+    if (product.category === 'account') {
+      if (accountDeliveryMethod === 'discord' && !discordUsername.trim()) {
         toast.error('Discord username required', {
           description: 'Enter the Discord username where we should contact you.',
         })
         return
       }
+    } else {
+      if (!robloxUsername.trim()) {
+        toast.error('Roblox username required', {
+          description: 'Enter the Roblox username where the request was sent.',
+        })
+        return
+      }
+      if (!friendRequestSent) {
+        toast.error('Send a friend request first', {
+          description: `Send a Roblox friend request to ${sellerRobloxUsername} and then check the box.`,
+        })
+        return
+      }
     }
 
-    if (!robloxUsername.trim()) {
-      toast.error('Roblox username required', {
-        description: 'Enter the Roblox username where the request was sent.',
-      })
-      return
-    }
-    if (!friendRequestSent) {
+    if (product.category === 'account' && accountDeliveryMethod === 'discord' && !friendRequestSent) {
       toast.error('Send a friend request first', {
         description: `Send a Roblox friend request to ${sellerRobloxUsername} and then check the box.`,
       })
       return
     }
+
     createOrderMutation.mutate()
   }
 
@@ -795,6 +806,9 @@ export function ProductView() {
                         <p className="text-xs text-muted-foreground mt-1">
                           Send a friend request on Roblox and share your username so we can accept it.
                         </p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          My Discord: <span className="font-semibold text-gold">{sellerDiscordUsername}</span>
+                        </p>
                       </button>
                       <button
                         type="button"
@@ -817,7 +831,7 @@ export function ProductView() {
                       </div>
                     ) : (
                       <div className="rounded-xl border border-border/50 bg-background p-4 text-sm text-muted-foreground">
-                        Choose Discord if you want to send a Roblox friend request. Enter both your Discord username and your Roblox username, since they are not always the same.
+                        Choose Discord if you want to send a Discord friend request. Enter both your Discord username and your Roblox username, since they are not always the same.
                       </div>
                     )}
                   </div>
@@ -843,16 +857,16 @@ export function ProductView() {
                     )}
                     <div className="space-y-2">
                       <label className="text-base font-semibold">
-                        Roblox Username <span className="text-red-500">*</span>
+                        Roblox Username {product.category === 'account' ? null : <span className="text-red-500">*</span>}
                       </label>
                       <Input
-                        placeholder="Enter your Roblox username"
+                        placeholder={product.category === 'account' ? "Enter your Roblox username (optional)" : "Enter your Roblox username"}
                         value={robloxUsername}
                         onChange={(e) => setRobloxUsername(e.target.value)}
                         className="bg-background border-border/50"
                       />
                       <p className="text-sm text-muted-foreground font-medium">
-                        Enter the Roblox username where the friend request was sent.
+                        {product.category === 'account' ? 'Optional for account orders. Enter the Roblox username where the friend request was sent, if any.' : 'Enter the Roblox username where the friend request was sent.'}
                       </p>
                     </div>
 
