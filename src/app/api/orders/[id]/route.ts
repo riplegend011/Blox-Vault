@@ -23,6 +23,8 @@ async function getAuthUser() {
 const updateOrderSchema = z.object({
   proofImage: z.string().optional(),
   transactionId: z.string().optional(),
+  robloxUsername: z.string().optional(),
+  discordUsername: z.string().optional(),
 })
 
 export async function PATCH(
