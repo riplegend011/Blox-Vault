@@ -330,10 +330,10 @@ function OrderRow({ order }: { order: Order }) {
                     </div>
                   )}
 
-                  {order.pointsUsed > 0 && (
+                  {(order.pointsUsed ?? 0) > 0 && (
                     <div>
                       <p className="text-xs text-muted-foreground">Points Used</p>
-                      <p className="text-sm font-medium">{order.pointsUsed} pts (৳{order.pointsDiscount ?? order.pointsUsed})</p>
+                      <p className="text-sm font-medium">{order.pointsUsed ?? 0} pts (৳{order.pointsDiscount ?? order.pointsUsed ?? 0})</p>
                     </div>
                   )}
 
