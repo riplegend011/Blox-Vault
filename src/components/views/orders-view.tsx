@@ -49,6 +49,7 @@ interface Order {
   adminNote: string | null
   robloxUsername?: string | null
   discordUsername?: string | null
+  friendRequestSent?: boolean | null
   accountDeliveryMethod?: string | null
   supportTicketId?: string | null
   createdAt: string
@@ -296,42 +297,62 @@ function OrderRow({ order }: { order: Order }) {
                           <p className="text-sm font-medium">{order.robloxUsername}</p>
                         </div>
                       )}
-                        <Button size="sm" variant="outline" className="text-gold border-gold/30 hover:bg-gold/10">
-                          <Upload className="w-3.5 h-3.5 mr-1.5" />
-                          Upload Proof
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Upload Payment Proof</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4 pt-2">
-                          <div>
-                            <p className="text-sm text-muted-foreground mb-2">
-                              Paste the URL of your payment screenshot or receipt.
-                            </p>
-                            <Input
-                              placeholder="https://example.com/proof.jpg"
-                              value={proofUrl}
-                              onChange={(e) => setProofUrl(e.target.value)}
-                            />
-                          </div>
-                          <Button
-                            className="w-full bg-gold hover:bg-gold/90 text-gold-foreground"
-                            disabled={!proofUrl.trim() || uploadProofMutation.isPending}
-                            onClick={() => uploadProofMutation.mutate()}
-                          >
-                            {uploadProofMutation.isPending ? (
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            ) : (
-                              <Upload className="w-4 h-4 mr-2" />
-                            )}
-                            Submit Proof
-                          </Button>
+                      {order.friendRequestSent !== undefined && (
+                        <div>
+                          <p className="text-xs text-muted-foreground">Friend Request Sent</p>
+                          <p className="text-sm font-medium">{order.friendRequestSent ? 'Yes' : 'No'}</p>
                         </div>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
+                      )}
+                      {order.proofImage && (
+                        <div>
+                          <p className="text-xs text-muted-foreground">Payment Proof</p>
+                          <a
+                            href={order.proofImage}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-sm font-medium text-gold hover:underline break-all"
+                          >
+                            {order.proofImage}
+                          </a>
+                        </div>
+                      )}
+                      <Dialog open={proofDialogOpen} onOpenChange={setProofDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button size="sm" variant="outline" className="text-gold border-gold/30 hover:bg-gold/10">
+                            <Upload className="w-3.5 h-3.5 mr-1.5" />
+                            Upload Proof
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Upload Payment Proof</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4 pt-2">
+                            <div>
+                              <p className="text-sm text-muted-foreground mb-2">
+                                Paste the URL of your payment screenshot or receipt.
+                              </p>
+                              <Input
+                                placeholder="https://example.com/proof.jpg"
+                                value={proofUrl}
+                                onChange={(e) => setProofUrl(e.target.value)}
+                              />
+                            </div>
+                            <Button
+                              className="w-full bg-gold hover:bg-gold/90 text-gold-foreground"
+                              disabled={!proofUrl.trim() || uploadProofMutation.isPending}
+                              onClick={() => uploadProofMutation.mutate()}
+                            >
+                              {uploadProofMutation.isPending ? (
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              ) : (
+                                <Upload className="w-4 h-4 mr-2" />
+                              )}
+                              Submit Proof
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                 )}
                 {order.proofImage && order.status === 'pending_payment' && (
                   <Dialog open={proofDialogOpen} onOpenChange={setProofDialogOpen}>
